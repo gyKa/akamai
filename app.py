@@ -1,10 +1,9 @@
 import logging
 import requests
-from bs4 import BeautifulSoup
 
-SEARCH_URL = 'https://www.owler.com/iaApp/basicSearchCompanySuggestions.htm?searchTerm=%s'
+SEARCH_URL = 'https://www.owler.com/iaApp/basicSearchCompanySuggestions.htm' \
+             '?searchTerm=%s'
 SEARCH_URL_COMPANY = 'https://www.owler.com/iaApp/fetchCompanyProfileData.htm'
-
 
 # create logger
 logger = logging.getLogger('akamai')
@@ -29,31 +28,37 @@ def search_domain(url: str) -> None:
     for company in search_response['results']:
         logger.info("Company ID: %s" % company['id'])
         logger.info("Company domain: %s" % company['primaryDomain'])
-        logger.info("Company SEO url: %s" % company['seoFriendlyCompanyProfileUrl'])
+        logger.info(
+            "Company SEO url: %s" % company['seoFriendlyCompanyProfileUrl']
+        )
 
         if company['primaryDomain'] == url:
-            search_company(company['seoFriendlyCompanyProfileUrl'])
+            search_company(int(company['id']))
 
             break
 
 
-def search_company(url: str) -> None:
-    headers = {'user-agent': 'my-app'}
+def search_company(company_id: int) -> None:
     request_data = {
-        "companyId": "102240",
+        "companyId": company_id,
         "components": ["company_info", "ceo", "keystats", "cp"],
         "section": "cp"
     }
 
-    company_page = requests.get(url, headers=headers)
-    company_data = requests.post(SEARCH_URL_COMPANY, json=request_data)
+    response = requests.post(SEARCH_URL_COMPANY, json=request_data)
 
-    soup = BeautifulSoup(company_page.content, 'html.parser')
+    if response.ok is not True:
+        raise RuntimeError("company search response is invalid")
 
-    logger.info("CEO: %s" % soup.find(itemprop="employee").get_text())
-    logger.info("Founded: %s" % soup.find(itemprop="foundingDate").get_text())
-    logger.info("Headquarters: %s" % soup.find(itemprop="foundingLocation").get_text())
-    logger.info("Employees: %s" % soup.find(itemprop="numberOfEmployees").get_text())
+    response = response.json()
+
+    ceo = response['ceo']['current_ceo']
+    company = response['company_info']['company_details']
+
+    logger.info("CEO: %s %s" % (ceo['first_name'], ceo['last_name']))
+    logger.info("Founded: %s" % company['founded'])
+    logger.info("Headquarters: %s" % company['hqAddress']['city'])
+    logger.info("Employees: %s" % response['keystats']['total_employees'])
 
 
 search_domain('akamai.com')
