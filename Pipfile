@@ -12,6 +12,7 @@ verify_ssl = true
 [packages]
 
 "beautifulsoup4" = "*"
+requests = "*"
 
 
 [requires]
