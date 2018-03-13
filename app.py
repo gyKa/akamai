@@ -40,9 +40,9 @@ def search_domain(url: str) -> None:
 
 def search_company(company_id: int) -> None:
     request_data = {
-        "companyId": company_id,
-        "components": ["company_info", "ceo", "keystats", "cp"],
-        "section": "cp"
+        'companyId': company_id,
+        'components': ['company_info', 'ceo', 'keystats', 'cp'],
+        'section': 'cp'
     }
 
     response = requests.post(SEARCH_URL_COMPANY, json=request_data)
